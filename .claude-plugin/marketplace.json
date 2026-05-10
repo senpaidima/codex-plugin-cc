@@ -1,19 +1,19 @@
 {
-  "name": "openai-codex",
+  "name": "senpai-codex",
   "owner": {
-    "name": "OpenAI"
+    "name": "senpaidima"
   },
   "metadata": {
-    "description": "Codex plugins to use in Claude Code for delegation and code review.",
-    "version": "1.0.4"
+    "description": "Codex plugin for Claude Code with GPT-5.5 and xhigh reasoning pinned by default.",
+    "version": "1.0.5"
   },
   "plugins": [
     {
       "name": "codex",
       "description": "Use Codex from Claude Code to review code or delegate tasks.",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "author": {
-        "name": "OpenAI"
+        "name": "senpaidima"
       },
       "source": "./plugins/codex"
     }

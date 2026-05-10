@@ -67,6 +67,8 @@ const REVIEW_SCHEMA = path.join(ROOT_DIR, "schemas", "review-output.schema.json"
 const DEFAULT_STATUS_WAIT_TIMEOUT_MS = 240000;
 const DEFAULT_STATUS_POLL_INTERVAL_MS = 2000;
 const VALID_REASONING_EFFORTS = new Set(["none", "minimal", "low", "medium", "high", "xhigh"]);
+const DEFAULT_CODEX_MODEL = "gpt-5.5";
+const DEFAULT_REASONING_EFFORT = "xhigh";
 const MODEL_ALIASES = new Map([["spark", "gpt-5.3-codex-spark"]]);
 const STOP_REVIEW_TASK_MARKER = "Run a stop-gate review of the previous Claude turn.";
 
@@ -99,22 +101,22 @@ function outputCommandResult(payload, rendered, asJson) {
 
 function normalizeRequestedModel(model) {
   if (model == null) {
-    return null;
+    return DEFAULT_CODEX_MODEL;
   }
   const normalized = String(model).trim();
   if (!normalized) {
-    return null;
+    return DEFAULT_CODEX_MODEL;
   }
   return MODEL_ALIASES.get(normalized.toLowerCase()) ?? normalized;
 }
 
 function normalizeReasoningEffort(effort) {
   if (effort == null) {
-    return null;
+    return DEFAULT_REASONING_EFFORT;
   }
   const normalized = String(effort).trim().toLowerCase();
   if (!normalized) {
-    return null;
+    return DEFAULT_REASONING_EFFORT;
   }
   if (!VALID_REASONING_EFFORTS.has(normalized)) {
     throw new Error(
@@ -408,6 +410,7 @@ async function executeReviewRun(request) {
   const result = await runAppServerTurn(context.repoRoot, {
     prompt,
     model: request.model,
+    effort: request.effort,
     sandbox: "read-only",
     outputSchema: readOutputSchema(REVIEW_SCHEMA),
     onProgress: request.onProgress
@@ -681,7 +684,7 @@ function enqueueBackgroundTask(cwd, job, request) {
 
 async function handleReviewCommand(argv, config) {
   const { options, positionals } = parseCommandInput(argv, {
-    valueOptions: ["base", "scope", "model", "cwd"],
+    valueOptions: ["base", "scope", "model", "effort", "cwd"],
     booleanOptions: ["json", "background", "wait"],
     aliasMap: {
       m: "model"
@@ -695,6 +698,8 @@ async function handleReviewCommand(argv, config) {
     base: options.base,
     scope: options.scope
   });
+  const model = normalizeRequestedModel(options.model);
+  const effort = normalizeReasoningEffort(options.effort);
 
   config.validateRequest?.(target, focusText);
   const metadata = buildReviewJobMetadata(config.reviewName, target);
@@ -713,7 +718,8 @@ async function handleReviewCommand(argv, config) {
         cwd,
         base: options.base,
         scope: options.scope,
-        model: options.model,
+        model,
+        effort,
         focusText,
         reviewName: config.reviewName,
         onProgress: progress

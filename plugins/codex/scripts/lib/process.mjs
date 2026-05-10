@@ -1,6 +1,13 @@
 import { spawnSync } from "node:child_process";
 import process from "node:process";
 
+function defaultShell(options = {}) {
+  if (process.platform !== "win32") {
+    return false;
+  }
+  return options.env?.ComSpec ?? process.env.ComSpec ?? true;
+}
+
 export function runCommand(command, args = [], options = {}) {
   const result = spawnSync(command, args, {
     cwd: options.cwd,
@@ -9,7 +16,7 @@ export function runCommand(command, args = [], options = {}) {
     input: options.input,
     maxBuffer: options.maxBuffer,
     stdio: options.stdio ?? "pipe",
-    shell: process.platform === "win32" ? (process.env.SHELL || true) : false,
+    shell: defaultShell(options),
     windowsHide: true
   });
 

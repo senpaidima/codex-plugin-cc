@@ -40,6 +40,13 @@ const DEFAULT_CAPABILITIES = {
   ]
 };
 
+function defaultShell(options = {}) {
+  if (process.platform !== "win32") {
+    return false;
+  }
+  return options.env?.ComSpec ?? process.env.ComSpec ?? true;
+}
+
 function buildJsonRpcError(code, message, data) {
   return data === undefined ? { code, message } : { code, message, data };
 }
@@ -190,7 +197,7 @@ class SpawnedCodexAppServerClient extends AppServerClientBase {
       cwd: this.cwd,
       env: this.options.env ?? process.env,
       stdio: ["pipe", "pipe", "pipe"],
-      shell: process.platform === "win32" ? (process.env.SHELL || true) : false,
+      shell: defaultShell(this.options),
       windowsHide: true
     });
 

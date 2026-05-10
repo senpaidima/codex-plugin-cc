@@ -235,6 +235,7 @@ test("review accepts the quoted raw argument style for built-in base-branch revi
 test("adversarial review renders structured findings over app-server turn/start", () => {
   const repo = makeTempDir();
   const binDir = makeTempDir();
+  const statePath = path.join(binDir, "fake-codex-state.json");
   installFakeCodex(binDir);
   initGitRepo(repo);
   fs.mkdirSync(path.join(repo, "src"));
@@ -250,6 +251,9 @@ test("adversarial review renders structured findings over app-server turn/start"
 
   assert.equal(result.status, 0);
   assert.match(result.stdout, /Missing empty-state guard/);
+  const fakeState = JSON.parse(fs.readFileSync(statePath, "utf8"));
+  assert.equal(fakeState.lastTurnStart.model, "gpt-5.5");
+  assert.equal(fakeState.lastTurnStart.effort, "xhigh");
 });
 
 test("adversarial review accepts the same base-branch targeting as review", () => {
@@ -625,6 +629,27 @@ test("task --fresh is treated as routing control and does not leak into the prom
   assert.equal(result.status, 0, result.stderr);
   const fakeState = JSON.parse(fs.readFileSync(statePath, "utf8"));
   assert.equal(fakeState.lastTurnStart.prompt, "diagnose the flaky test");
+});
+
+test("task defaults to the fork-pinned GPT-5.5 model and xhigh effort", () => {
+  const repo = makeTempDir();
+  const binDir = makeTempDir();
+  const statePath = path.join(binDir, "fake-codex-state.json");
+  installFakeCodex(binDir);
+  initGitRepo(repo);
+  fs.writeFileSync(path.join(repo, "README.md"), "hello\n");
+  run("git", ["add", "README.md"], { cwd: repo });
+  run("git", ["commit", "-m", "init"], { cwd: repo });
+
+  const result = run("node", [SCRIPT, "task", "diagnose the failing test"], {
+    cwd: repo,
+    env: buildEnv(binDir)
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  const fakeState = JSON.parse(fs.readFileSync(statePath, "utf8"));
+  assert.equal(fakeState.lastTurnStart.model, "gpt-5.5");
+  assert.equal(fakeState.lastTurnStart.effort, "xhigh");
 });
 
 test("task forwards model selection and reasoning effort to app-server turn/start", () => {
