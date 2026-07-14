@@ -16,7 +16,7 @@ export function runCommand(command, args = [], options = {}) {
     input: options.input,
     maxBuffer: options.maxBuffer,
     stdio: options.stdio ?? "pipe",
-    shell: defaultShell(options),
+    shell: options.shell ?? defaultShell(options),
     windowsHide: true
   });
 
